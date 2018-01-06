@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-4.3.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.3.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-4.3.xsd">
+	<!-- 加载jdbc配置文件 -->
+	<!-- <context:property-placeholder location="classpath:jdbc.properties" ignore-unresolvable="true"/> -->
+	<!-- 配置c3p0数据源 -->
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+		<property name="driverClass" value="com.mysql.jdbc.Driver"/>
+		<property name="jdbcUrl" value="jdbc:mysql://192.168.74.128:3306/ssm?useUnicode=true&amp;characterEncoding=utf-8"/>
+		<property name="user" value="root"/>
+		<property name="password" value="123456"/>
+	</bean>
+	<!-- 配置mybatis的事务管理器 -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource"></property>
+	</bean>
+	<!-- 创建sqlsessionfactory -->
+	<bean id="sqlSessionFactoryBean" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="configLocation" value="classpath:mybatis.xml"/>
+	</bean>
+	<!-- 生成映射动态代理对象 -->
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.hzxy.ssm.dao"/>
+		<property name="sqlSessionFactory" ref="sqlSessionFactoryBean"/>
+	</bean>
+	<!-- 配置事务通知 -->
+	<tx:advice id="tm" transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="login*" read-only="true"/>
+			<tx:method name="find*" read-only="true"/>
+			<tx:method name="query*" read-only="true"/>
+			<tx:method name="*" propagation="REQUIRED"/>
+		</tx:attributes>
+	</tx:advice>
+	<!-- 配置事务切面 -->
+	<aop:config>
+		<aop:pointcut expression="execution(* com.hzxy.ssm.dao.*.*(..))" id="p1"/>
+		<aop:advisor advice-ref="tm" pointcut-ref="p1"/>
+	</aop:config>
+	<aop:aspectj-autoproxy/>
+	<!-- 开启注解的包 -->
+	<context:component-scan base-package="com.hzxy.ssm"/>
+	<!-- mvc注解驱动 -->
+	<mvc:annotation-driven/>
+	<!-- 引入静态资源管理 -->
+	<mvc:default-servlet-handler/>
+	<bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/"/>
+		<property name="suffix" value=".jsp"/>
+	</bean>
+</beans>
